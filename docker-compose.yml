@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # API GATEWAY
+  # ==========================================
+  api_gateway:
+    build:
+      context: ./api_gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - auth_service
+      - space_service
+      - booking_service
+      - payment_service
+      - notification_service
+    networks:
+      - deskspace_network
+
+  # ==========================================
+  # AUTH SERVICE (Django)
+  # ==========================================
+  auth_service:
+    build:
+      context: .
+      dockerfile: ./auth_service/Dockerfile
+    volumes:
+      - ./auth_service:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_URL=postgres://postgres:postgres@db_auth:5432/auth_db
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db_auth
+    networks:
+      - deskspace_network
+
+  db_auth:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - deskspace_network
+
+  # ==========================================
+  # SPACE SERVICE (Django)
+  # ==========================================
+  space_service:
+    build:
+      context: .
+      dockerfile: ./space_service/Dockerfile
+    volumes:
+      - ./space_service:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_URL=postgres://postgres:postgres@db_space:5432/space_db
+    ports:
+      - "8002:8002"
+    depends_on:
+      - db_space
+    networks:
+      - deskspace_network
+
+  db_space:
+    # PostGIS version of postgres for spatial data (floors/maps)
+    image: postgis/postgis:15-3.3-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: space_db
+    volumes:
+      - postgres_space_data:/var/lib/postgresql/data
+    networks:
+      - deskspace_network
+
+  # ==========================================
+  # BOOKING SERVICE (Django)
+  # ==========================================
+  booking_service:
+    build:
+      context: .
+      dockerfile: ./booking_service/Dockerfile
+    volumes:
+      - ./booking_service:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+      - DATABASE_URL=postgres://postgres:postgres@db_booking:5432/booking_db
+    ports:
+      - "8003:8003"
+    depends_on:
+      - db_booking
+    networks:
+      - deskspace_network
+
+  db_booking:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: booking_db
+    volumes:
+      - postgres_booking_data:/var/lib/postgresql/data
+    networks:
+      - deskspace_network
+
+  # ==========================================
+  # PAYMENT SERVICE (FastAPI)
+  # ==========================================
+  payment_service:
+    build:
+      context: ./payment_service
+    volumes:
+      - ./payment_service:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db_payment:5432/payment_db
+    ports:
+      - "8004:8004"
+    depends_on:
+      - db_payment
+    networks:
+      - deskspace_network
+
+  db_payment:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment_db
+    volumes:
+      - postgres_payment_data:/var/lib/postgresql/data
+    networks:
+      - deskspace_network
+
+  # ==========================================
+  # NOTIFICATION SERVICE (FastAPI + Celery/Redis)
+  # ==========================================
+  notification_service:
+    build:
+      context: ./notification_service
+    volumes:
+      - ./notification_service:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db_notification:5432/notification_db
+      - REDIS_URL=redis://redis_broker:6379/0
+    ports:
+      - "8005:8005"
+    depends_on:
+      - db_notification
+      - redis_broker
+    networks:
+      - deskspace_network
+
+  db_notification:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notification_db
+    volumes:
+      - postgres_notification_data:/var/lib/postgresql/data
+    networks:
+      - deskspace_network
+
+  redis_broker:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - deskspace_network
+
+volumes:
+  postgres_auth_data:
+  postgres_space_data:
+  postgres_booking_data:
+  postgres_payment_data:
+  postgres_notification_data:
+
+networks:
+  deskspace_network:
+    driver: bridge
