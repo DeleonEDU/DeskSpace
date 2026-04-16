@@ -3,9 +3,14 @@ import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = environ.get('SECRET_KEY', 'django-insecure-*k4z$(ddg^4q+3qqa(_j5v_6k(n+i_6k2)!fe2bnumemp59c5j')
-DEBUG = environ.get('DEBUG', True)
-ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS', '*').split(',')
+env = environ.Env(
+    DEBUG=(bool, True),
+)
+environ.Env.read_env(BASE_DIR / '.env')
+
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-*k4z$(ddg^4q+3qqa(_j5v_6k(n+i_6k2)!fe2bnumemp59c5j')
+DEBUG = env.bool('DEBUG', default=True)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 
 # Application definition
