@@ -210,3 +210,4 @@ __marimo__/
 __pycache__/
 # Media files
 media/
+.env

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -7,9 +7,10 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+COPY booking_service/requirements.txt /app/
 RUN pip install --upgrade pip
-RUN pip install django psycopg2-binary djangorestframework
+RUN pip install -r requirements.txt
 
-COPY . /app/
+COPY booking_service/ /app/
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8003"]
