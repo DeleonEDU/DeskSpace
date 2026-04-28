@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store';
 
 import toast from 'react-hot-toast';
+import { authApi } from '../../api/auth';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,10 +19,10 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Mock login for demo
-      await new Promise((res) => setTimeout(res, 800));
-      setTokens('mock-access-token', 'mock-refresh-token');
-      setUser({ id: 1, email, first_name: 'Анна', last_name: 'Петренко', phone_number: '+380501234567' });
+      const tokens = await authApi.login({ email, password });
+      setTokens(tokens.access, tokens.refresh);
+      const user = await authApi.me();
+      setUser(user);
       toast.success('Ласкаво просимо!');
       navigate('/');
     } catch {
@@ -126,7 +127,7 @@ export const LoginPage: React.FC = () => {
         {/* Demo shortcut */}
         <button
           className="demo-btn"
-          onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+          onClick={() => toast('Демо-вхід вимкнено: використовується реальний бекенд.')}
           id="demo-login-btn"
         >
           ✨ Демо-вхід (без пароля)

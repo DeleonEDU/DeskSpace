@@ -39,6 +39,8 @@ services:
 
   db_auth:
     image: postgres:15-alpine
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -70,6 +72,8 @@ services:
   db_space:
     # PostGIS version of postgres for spatial data (floors/maps)
     image: postgis/postgis:15-3.3-alpine
+    ports:
+      - "5434:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -100,6 +104,8 @@ services:
 
   db_booking:
     image: postgres:15-alpine
+    ports:
+      - "5435:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -128,6 +134,8 @@ services:
 
   db_payment:
     image: postgres:15-alpine
+    ports:
+      - "5436:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -158,6 +166,8 @@ services:
 
   db_notification:
     image: postgres:15-alpine
+    ports:
+      - "5437:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// All requests go through the API Gateway (nginx on port 80 in production, or directly in dev)
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost';
+// In dev, use relative `/api/...` so Vite proxy can forward to nginx (http://localhost:80)
+// In prod, you can set VITE_API_BASE_URL to point to the gateway.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export const apiClient = axios.create({
   baseURL: API_BASE,

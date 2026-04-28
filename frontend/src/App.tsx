@@ -5,6 +5,7 @@ import { Navbar } from './components/Navbar/Navbar';
 import { BookingPage } from './pages/BookingPage/BookingPage';
 import { LoginPage } from './pages/LoginPage/LoginPage';
 import { MyBookingsPage } from './pages/MyBookingsPage/MyBookingsPage';
+import { RegisterPage } from './pages/RegisterPage/RegisterPage';
 import { useAuthStore } from './store';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ function App() {
         <main className="app-content">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route
               path="/"
               element={

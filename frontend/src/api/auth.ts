@@ -9,7 +9,7 @@ export const authApi = {
     apiClient.post<User>('/api/auth/register/', payload).then((r) => r.data),
 
   me: () =>
-    apiClient.get<User>('/api/auth/me/').then((r) => r.data),
+    apiClient.get<User>('/api/auth/profile/').then((r) => r.data),
 
   refresh: (refresh: string) =>
     apiClient.post<{ access: string }>('/api/auth/token/refresh/', { refresh }).then((r) => r.data),
