@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-asyncpg
-celery
-redis
-python-dotenv
