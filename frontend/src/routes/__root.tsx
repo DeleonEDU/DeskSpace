@@ -34,10 +34,16 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "DeskSpace — Бронювання кімнат" },
-      { name: "description", content: "DeskSpace — сучасний сервіс бронювання переговорних кімнат." },
+      {
+        name: "description",
+        content: "DeskSpace — сучасний сервіс бронювання переговорних кімнат.",
+      },
       { name: "author", content: "DeskSpace" },
       { property: "og:title", content: "DeskSpace" },
-      { property: "og:description", content: "DeskSpace — сучасний сервіс бронювання переговорних кімнат." },
+      {
+        property: "og:description",
+        content: "DeskSpace — сучасний сервіс бронювання переговорних кімнат.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@DeskSpace" },

@@ -28,7 +28,12 @@ function Register() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 shadow-sm">
             <svg viewBox="0 0 24 24" fill="none" className="size-8 text-primary absolute">
-              <path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path
+                d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
             </svg>
             <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
             <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
@@ -57,13 +62,13 @@ function Register() {
       const res = await fetch("/api/auth/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email, 
-          first_name: firstName, 
-          last_name: lastName, 
-          phone_number: phone, 
-          password, 
-          password_confirmation: passwordConfirmation 
+        body: JSON.stringify({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phone,
+          password,
+          password_confirmation: passwordConfirmation,
         }),
       });
 
@@ -86,12 +91,19 @@ function Register() {
         {/* Logo/Icon */}
         <div className="mx-auto mb-6 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
           <svg viewBox="0 0 24 24" fill="none" className="size-6">
-            <path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+            <path
+              d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">Створити акаунт</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+            Створити акаунт
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">Приєднуйтесь до DeskSpace</p>
         </div>
 
@@ -101,10 +113,15 @@ function Register() {
               {error}
             </div>
           )}
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-xs uppercase tracking-wider text-muted-foreground">Ім'я</Label>
+              <Label
+                htmlFor="firstName"
+                className="text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Ім'я
+              </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -118,7 +135,12 @@ function Register() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-xs uppercase tracking-wider text-muted-foreground">Прізвище</Label>
+              <Label
+                htmlFor="lastName"
+                className="text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Прізвище
+              </Label>
               <Input
                 id="lastName"
                 value={lastName}
@@ -131,7 +153,12 @@ function Register() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+            <Label
+              htmlFor="email"
+              className="text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Email
+            </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -147,7 +174,12 @@ function Register() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-muted-foreground">Телефон</Label>
+            <Label
+              htmlFor="phone"
+              className="text-xs uppercase tracking-wider text-muted-foreground"
+            >
+              Телефон
+            </Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -161,10 +193,15 @@ function Register() {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">Пароль</Label>
+              <Label
+                htmlFor="password"
+                className="text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Пароль
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -179,7 +216,12 @@ function Register() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="passwordConfirmation" className="text-xs uppercase tracking-wider text-muted-foreground">Підтвердження</Label>
+              <Label
+                htmlFor="passwordConfirmation"
+                className="text-xs uppercase tracking-wider text-muted-foreground"
+              >
+                Підтвердження
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
@@ -195,14 +237,21 @@ function Register() {
             </div>
           </div>
 
-          <Button type="submit" disabled={isSubmitting} className="h-11 w-full rounded-xl mt-2 font-medium shadow-sm transition-all active:scale-[0.98]">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-11 w-full rounded-xl mt-2 font-medium shadow-sm transition-all active:scale-[0.98]"
+          >
             {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Створити акаунт"}
           </Button>
         </form>
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
           Вже є акаунт?{" "}
-          <Link to="/login" className="font-medium text-primary hover:text-primary/80 transition-colors">
+          <Link
+            to="/login"
+            className="font-medium text-primary hover:text-primary/80 transition-colors"
+          >
             Увійти
           </Link>
         </div>

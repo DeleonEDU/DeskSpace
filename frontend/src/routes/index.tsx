@@ -10,12 +10,20 @@ import { FloorPlan } from "@/components/booking/FloorPlan";
 import { BookingPanel } from "@/components/booking/BookingPanel";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { useSpaces, useBookings, type Space } from "@/hooks/use-booking";
 import { useAuth } from "@/context/AuthContext";
+import { useApi } from "@/hooks/use-api";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -34,7 +42,8 @@ export const Route = createFileRoute("/")({
 const formatHour = (h: number) => `${String(Math.floor(h)).padStart(2, "0")}:00`;
 
 function Index() {
-  const { token, user, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
+  const fetchApi = useApi();
   const [floor, setFloor] = useState(4);
   const [selected, setSelected] = useState<Space | null>(null);
   const [hovered, setHovered] = useState<Space | null>(null);
@@ -44,31 +53,33 @@ function Index() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: spaces = [] } = useSpaces();
-  const { data: bookings = [], refetch: refetchBookings } = useBookings(date, timeRange[0], timeRange[1]);
+  const { data: bookings = [], refetch: refetchBookings } = useBookings(
+    date,
+    timeRange[0],
+    timeRange[1],
+  );
 
-  const floorSpaces = useMemo(() => spaces.filter(s => s.floor === floor), [spaces, floor]);
-  const occupiedSpaceIds = useMemo(() => new Set(bookings.map(b => b.space_id)), [bookings]);
+  const floorSpaces = useMemo(() => spaces.filter((s) => s.floor === floor), [spaces, floor]);
+  const occupiedSpaceIds = useMemo(() => new Set(bookings.map((b) => b.space_id)), [bookings]);
 
   const tooltip = hovered;
   const dateLabel = format(date, "d MMMM", { locale: uk });
   const timeLabel = `${formatHour(timeRange[0])} – ${formatHour(timeRange[1])}`;
 
   const handleBook = async () => {
-    if (!selected || !token) return;
+    if (!selected) return;
 
     const startDateTime = new Date(date);
     startDateTime.setHours(timeRange[0], 0, 0, 0);
-    
+
     const endDateTime = new Date(date);
     endDateTime.setHours(timeRange[1], 0, 0, 0);
 
     try {
-      let currentToken = token;
-      let response = await fetch("/api/bookings/", {
+      const response = await fetchApi("/api/bookings/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${currentToken}`
         },
         body: JSON.stringify({
           space_id: selected.id,
@@ -76,36 +87,6 @@ function Index() {
           end_time: endDateTime.toISOString(),
         }),
       });
-
-      // If token expired, try refreshing it
-      if (response.status === 401) {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (refreshToken) {
-          const refreshRes = await fetch("/api/auth/token/refresh/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh: refreshToken }),
-          });
-          
-          if (refreshRes.ok) {
-            const data = await refreshRes.json();
-            currentToken = data.access;
-            // Retry booking with new token
-            response = await fetch("/api/bookings/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${currentToken}`
-              },
-              body: JSON.stringify({
-                space_id: selected.id,
-                start_time: startDateTime.toISOString(),
-                end_time: endDateTime.toISOString(),
-              }),
-            });
-          }
-        }
-      }
 
       if (response.ok) {
         setShowSuccess(true);
@@ -126,7 +107,12 @@ function Index() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 shadow-sm">
             <svg viewBox="0 0 24 24" fill="none" className="size-8 text-primary absolute">
-              <path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path
+                d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
             </svg>
             <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
             <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
@@ -264,16 +250,21 @@ function Index() {
           </div>
         </section>
 
-        <Dialog open={showSuccess} onOpenChange={(open) => {
-          setShowSuccess(open);
-          if (!open) setSelected(null);
-        }}>
+        <Dialog
+          open={showSuccess}
+          onOpenChange={(open) => {
+            setShowSuccess(open);
+            if (!open) setSelected(null);
+          }}
+        >
           <DialogContent className="sm:max-w-md rounded-3xl bg-card backdrop-blur-xl">
             <DialogHeader className="flex flex-col items-center text-center">
               <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
                 <CheckCircle2 className="size-6 text-primary" />
               </div>
-              <DialogTitle className="font-display text-xl font-bold">Бронювання підтверджено!</DialogTitle>
+              <DialogTitle className="font-display text-xl font-bold">
+                Бронювання підтверджено!
+              </DialogTitle>
               <DialogDescription className="text-center pt-2">
                 Ви успішно забронювали <strong>{selected?.name}</strong> на {floor}-му поверсі.
                 <br />
@@ -283,7 +274,7 @@ function Index() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="sm:justify-center mt-4">
-              <Button 
+              <Button
                 onClick={() => {
                   setShowSuccess(false);
                   setSelected(null);

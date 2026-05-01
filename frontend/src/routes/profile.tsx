@@ -1,6 +1,16 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { TopBar } from "@/components/booking/TopBar";
-import { Calendar, Clock, MapPin, Mail, Phone, Settings, ChevronRight, Trash2, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Mail,
+  Phone,
+  Settings,
+  ChevronRight,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useMyBookings, useSpaces, useDeleteBooking } from "@/hooks/use-booking";
 import { format, isAfter } from "date-fns";
@@ -23,7 +33,10 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Мій профіль — cospace" },
-      { name: "description", content: "Профіль користувача cospace: ваші бронювання, історія та налаштування." },
+      {
+        name: "description",
+        content: "Профіль користувача cospace: ваші бронювання, історія та налаштування.",
+      },
     ],
   }),
 });
@@ -49,7 +62,12 @@ function ProfilePage() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 shadow-sm">
             <svg viewBox="0 0 24 24" fill="none" className="size-8 text-primary absolute">
-              <path d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path
+                d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
             </svg>
             <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
             <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
@@ -64,29 +82,35 @@ function ProfilePage() {
   if (!user) return <Navigate to="/login" />;
 
   const now = new Date();
-  
-  const enrichedBookings = bookings.map((b: any) => {
-    const space = spaces.find((s: any) => s.id === b.space_id);
-    const startDate = new Date(b.start_time);
-    const endDate = new Date(b.end_time);
-    
-    return {
-      ...b,
-      space,
-      isUpcoming: isAfter(startDate, now),
-      dateStr: format(startDate, "d MMMM", { locale: uk }),
-      timeStr: `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`
-    };
-  }).sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
-  const upcoming = enrichedBookings.filter((b: any) => b.isUpcoming && b.status !== 'cancelled').reverse();
+  const enrichedBookings = bookings
+    .map((b: any) => {
+      const space = spaces.find((s: any) => s.id === b.space_id);
+      const startDate = new Date(b.start_time);
+      const endDate = new Date(b.end_time);
 
-  const totalHours = enrichedBookings.filter((b: any) => !b.isUpcoming).reduce((acc: number, b: any) => {
-    if (b.status === 'cancelled') return acc;
-    const start = new Date(b.start_time);
-    const end = new Date(b.end_time);
-    return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-  }, 0);
+      return {
+        ...b,
+        space,
+        isUpcoming: isAfter(startDate, now),
+        dateStr: format(startDate, "d MMMM", { locale: uk }),
+        timeStr: `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`,
+      };
+    })
+    .sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+
+  const upcoming = enrichedBookings
+    .filter((b: any) => b.isUpcoming && b.status !== "cancelled")
+    .reverse();
+
+  const totalHours = enrichedBookings
+    .filter((b: any) => !b.isUpcoming)
+    .reduce((acc: number, b: any) => {
+      if (b.status === "cancelled") return acc;
+      const start = new Date(b.start_time);
+      const end = new Date(b.end_time);
+      return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    }, 0);
 
   return (
     <main className="min-h-screen px-4 py-6 lg:px-10 lg:py-8">
@@ -94,7 +118,9 @@ function ProfilePage() {
         <TopBar />
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">Головна</Link>
+          <Link to="/" className="hover:text-foreground">
+            Головна
+          </Link>
           <ChevronRight className="size-3.5" />
           <span className="text-foreground">Мій профіль</span>
         </div>
@@ -104,9 +130,12 @@ function ProfilePage() {
           <aside className="flex flex-col gap-5 rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-card)] backdrop-blur-xl">
             <div className="flex flex-col items-center text-center">
               <div className="flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[oklch(0.72_0.16_280)] font-display text-3xl font-semibold text-primary-foreground shadow-[var(--shadow-soft)]">
-                {user.first_name?.[0]}{user.last_name?.[0]}
+                {user.first_name?.[0]}
+                {user.last_name?.[0]}
               </div>
-              <h2 className="mt-4 font-display text-xl font-semibold tracking-tight">{user.first_name} {user.last_name}</h2>
+              <h2 className="mt-4 font-display text-xl font-semibold tracking-tight">
+                {user.first_name} {user.last_name}
+              </h2>
               <p className="text-sm text-muted-foreground">Учасник</p>
             </div>
 
@@ -135,11 +164,21 @@ function ProfilePage() {
             {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { v: enrichedBookings.filter((b: any) => b.status !== 'cancelled').length.toString(), l: "Бронювань" },
+                {
+                  v: enrichedBookings
+                    .filter((b: any) => b.status !== "cancelled")
+                    .length.toString(),
+                  l: "Бронювань",
+                },
                 { v: `${Math.round(totalHours)} год`, l: "Загалом" },
               ].map((s) => (
-                <div key={s.l} className="rounded-2xl bg-card p-4 ring-1 ring-border/60 shadow-[var(--shadow-soft)] backdrop-blur-xl">
-                  <p className="font-display text-2xl font-semibold tracking-tight text-foreground">{s.v}</p>
+                <div
+                  key={s.l}
+                  className="rounded-2xl bg-card p-4 ring-1 ring-border/60 shadow-[var(--shadow-soft)] backdrop-blur-xl"
+                >
+                  <p className="font-display text-2xl font-semibold tracking-tight text-foreground">
+                    {s.v}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{s.l}</p>
                 </div>
               ))}
@@ -148,23 +187,40 @@ function ProfilePage() {
             {/* Upcoming */}
             <section className="rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-card)] backdrop-blur-xl">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-display text-base font-semibold tracking-tight">Майбутні бронювання</h3>
-                <Link to="/" className="text-xs font-medium text-primary hover:underline">+ Нове</Link>
+                <h3 className="font-display text-base font-semibold tracking-tight">
+                  Майбутні бронювання
+                </h3>
+                <Link to="/" className="text-xs font-medium text-primary hover:underline">
+                  + Нове
+                </Link>
               </div>
               {upcoming.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Немає майбутніх бронювань.</p>
               ) : (
                 <ul className="space-y-2">
                   {upcoming.map((b: any) => (
-                    <li key={b.id} className="flex items-center justify-between rounded-2xl bg-secondary/70 px-4 py-3">
+                    <li
+                      key={b.id}
+                      className="flex items-center justify-between rounded-2xl bg-secondary/70 px-4 py-3"
+                    >
                       <div>
-                        <p className="font-display text-sm font-semibold">{b.space?.name || "Невідоме місце"}</p>
-                        <p className="text-xs text-muted-foreground">{b.space?.floor || "?"}-й поверх</p>
+                        <p className="font-display text-sm font-semibold">
+                          {b.space?.name || "Невідоме місце"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.space?.floor || "?"}-й поверх
+                        </p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
-                          <span className="flex items-center gap-1.5"><Calendar className="size-3.5" />{b.dateStr}</span>
-                          <span className="flex items-center gap-1.5"><Clock className="size-3.5" />{b.timeStr}</span>
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="size-3.5" />
+                            {b.dateStr}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="size-3.5" />
+                            {b.timeStr}
+                          </span>
                         </div>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -184,12 +240,16 @@ function ProfilePage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Скасувати бронювання?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Ви впевнені, що хочете скасувати це бронювання? Цю дію неможливо відмінити.
+                                Ви впевнені, що хочете скасувати це бронювання? Цю дію неможливо
+                                відмінити.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Ні, залишити</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              <AlertDialogAction
+                                onClick={() => handleDelete(b.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
                                 Так, скасувати
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -209,22 +269,29 @@ function ProfilePage() {
                 <p className="text-sm text-muted-foreground">Історія порожня.</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {enrichedBookings.filter((b: any) => !b.isUpcoming).map((b: any) => (
-                    <li key={b.id} className={`flex items-center justify-between py-3 text-sm ${b.status === 'cancelled' ? 'opacity-50' : ''}`}>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {b.space?.name || "Невідоме місце"}
-                          {b.status === 'cancelled' && (
-                            <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                              Скасовано
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{b.space?.floor || "?"}-й поверх · {b.dateStr}</p>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{b.timeStr}</span>
-                    </li>
-                  ))}
+                  {enrichedBookings
+                    .filter((b: any) => !b.isUpcoming)
+                    .map((b: any) => (
+                      <li
+                        key={b.id}
+                        className={`flex items-center justify-between py-3 text-sm ${b.status === "cancelled" ? "opacity-50" : ""}`}
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {b.space?.name || "Невідоме місце"}
+                            {b.status === "cancelled" && (
+                              <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                                Скасовано
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {b.space?.floor || "?"}-й поверх · {b.dateStr}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{b.timeStr}</span>
+                      </li>
+                    ))}
                 </ul>
               )}
             </section>
