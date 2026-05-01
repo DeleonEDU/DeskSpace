@@ -13,4 +13,4 @@ RUN pip install -r requirements.txt
 
 COPY booking_service/ /app/
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8003"]
+CMD ["sh", "-c", "sleep 10 && python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8003"]
