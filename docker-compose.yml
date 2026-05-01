@@ -21,8 +21,8 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
-    environment:
-      - NODE_ENV=development
+    env_file:
+      - .env
     networks:
       - deskspace_network
 
@@ -32,12 +32,11 @@ services:
       dockerfile: ./auth_service/Dockerfile
     volumes:
       - ./auth_service:/app
+    env_file:
+      - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
-      - DATABASE_URL=postgres://postgres:postgres@db_auth:5432/auth_db
-      - SECRET_KEY=shared-secret-key-for-all-services-12345
-    ports:
-      - "8001:8001"
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_auth:5432/auth_db
     depends_on:
       - db_auth
     networks:
@@ -45,12 +44,10 @@ services:
 
   db_auth:
     image: postgres:15-alpine
-    ports:
-      - "5433:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: auth_db
+      - POSTGRES_DB=auth_db
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
     networks:
@@ -62,12 +59,11 @@ services:
       dockerfile: ./space_service/Dockerfile
     volumes:
       - ./space_service:/app
+    env_file:
+      - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
-      - DATABASE_URL=postgres://postgres:postgres@db_space:5432/space_db
-      - SECRET_KEY=shared-secret-key-for-all-services-12345
-    ports:
-      - "8002:8002"
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_space:5432/space_db
     depends_on:
       - db_space
     networks:
@@ -75,12 +71,10 @@ services:
 
   db_space:
     image: postgis/postgis:15-3.3-alpine
-    ports:
-      - "5434:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: space_db
+      - POSTGRES_DB=space_db
     volumes:
       - postgres_space_data:/var/lib/postgresql/data
     networks:
@@ -92,12 +86,11 @@ services:
       dockerfile: ./booking_service/Dockerfile
     volumes:
       - ./booking_service:/app
+    env_file:
+      - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
-      - DATABASE_URL=postgres://postgres:postgres@db_booking:5432/booking_db
-      - SECRET_KEY=shared-secret-key-for-all-services-12345
-    ports:
-      - "8003:8003"
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_booking:5432/booking_db
     depends_on:
       - db_booking
     networks:
@@ -105,12 +98,10 @@ services:
 
   db_booking:
     image: postgres:15-alpine
-    ports:
-      - "5435:5432"
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: booking_db
+      - POSTGRES_DB=booking_db
     volumes:
       - postgres_booking_data:/var/lib/postgresql/data
     networks:
