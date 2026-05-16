@@ -31,10 +31,14 @@ def print_header(title):
 def run_command(command, cwd=None):
     """Run a shell command, stream output to console, and return (success, output)."""
     try:
-        # We use Popen to stream output in real-time while also capturing it
+        env = os.environ.copy()
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        env["PYTHONPATH"] = f"{os.path.join(base_dir, 'shared')}:{env.get('PYTHONPATH', '')}"
+
         process = subprocess.Popen(
             command, 
             cwd=cwd, 
+            env=env,
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT,
             text=True,

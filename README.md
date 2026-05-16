@@ -41,6 +41,10 @@ DeskSpace/
 │   ├── requirements.txt
 │   └── management/commands/seed_spaces.py  # Наповнення БД
 │   └── Dockerfile
+├── shared/                 # Спільні бібліотеки для бекенд-сервісів
+│   ├── deskspace_auth/     # Пакет автентифікації
+│   └── deskspace_common/   # Спільні утиліти
+├── scripts/                # Скрипти для Docker entrypoint
 ├── e2e_tests/              # End-to-End тести (Pytest)
 │   └── test_e2e.py
 ├── frontend/               # Клієнтський додаток (React)
@@ -52,11 +56,12 @@ DeskSpace/
 
 Для запуску проекту вам знадобляться встановлені **Docker** та **Docker Compose**.
 
-### 1. Клонування репозиторію
+### 1. Клонування репозиторію та налаштування оточення
 
 ```bash
 git clone <url-вашого-репозиторію>
 cd DeskSpace
+cp .env.example .env
 ```
 
 ### 2. Запуск контейнерів
@@ -69,30 +74,16 @@ docker-compose up -d --build
 
 Ця команда завантажить необхідні образи, збере контейнери та запустить їх. Перший запуск може зайняти кілька хвилин.
 
-### 3. Застосування міграцій бази даних
+### 3. Наповнення бази даних (Seeding)
 
-Після того, як контейнери успішно запустилися, необхідно створити таблиці в базах даних для кожного мікросервісу:
-
-```bash
-# Міграції для сервісу автентифікації
-docker-compose exec auth_service python manage.py migrate
-
-# Міграції для сервісу просторів (кімнат та столів)
-docker-compose exec space_service python manage.py migrate
-
-# Міграції для сервісу бронювання
-docker-compose exec booking_service python manage.py migrate
-```
-
-### 4. Наповнення бази даних (Seeding)
-
+Міграції баз даних застосовуються автоматично під час запуску контейнерів.
 Щоб інтерфейс не був порожнім, необхідно додати початкові дані (поверхи, кімнати, столи). Для цього виконайте скрипт сідінгу в `space_service`:
 
 ```bash
 docker compose exec space_service python manage.py seed_spaces
 ```
 
-### 5. Використання додатку
+### 4. Використання додатку
 
 Після виконання всіх кроків додаток буде доступний у вашому браузері:
 
