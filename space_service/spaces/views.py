@@ -1,52 +1,87 @@
-from rest_framework import viewsets, permissions, filters
 from django_filters import rest_framework as django_filters
-from .models import Location, Floor, Amenity, Space
-from .serializers import LocationSerializer, FloorSerializer, AmenitySerializer, SpaceSerializer
+from rest_framework import filters, permissions, viewsets
 
-class IsStaffOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return hasattr(request.user, 'is_staff') and request.user.is_staff
+from spaces.models import Amenity, Floor, Location, Space
+from spaces.permissions import IsStaffOrReadOnly
+from spaces.serializers import (
+    AmenitySerializer,
+    FloorListSerializer,
+    FloorSerializer,
+    LocationListSerializer,
+    LocationSerializer,
+    SpaceListSerializer,
+    SpaceSerializer,
+)
+from spaces.services.space_query_service import SpaceQueryService
 
-class LocationViewSet(viewsets.ModelViewSet):
-    queryset = Location.objects.all().order_by('name')
-    serializer_class = LocationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
+SERIALIZER_ACTION_MAP = {
+    Location: {
+        "list": LocationListSerializer,
+        "retrieve": LocationSerializer,
+        "default": LocationSerializer,
+    },
+    Floor: {
+        "list": FloorListSerializer,
+        "retrieve": FloorSerializer,
+        "default": FloorSerializer,
+    },
+    Amenity: {
+        "default": AmenitySerializer,
+    },
+    Space: {
+        "list": SpaceListSerializer,
+        "retrieve": SpaceSerializer,
+        "default": SpaceSerializer,
+    },
+}
 
-class FloorViewSet(viewsets.ModelViewSet):
-    queryset = Floor.objects.all().order_by('location', 'level')
-    serializer_class = FloorSerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
-    filter_backends = [django_filters.DjangoFilterBackend]
-    filterset_fields = ['location', 'level']
 
-class AmenityViewSet(viewsets.ModelViewSet):
-    queryset = Amenity.objects.all().order_by('name')
-    serializer_class = AmenitySerializer
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
-
-# Кастомний фільтр для розширених запитів
 class SpaceFilter(django_filters.FilterSet):
-    # Дозволяє шукати через кому: ?id__in=1,2,3
-    id__in = django_filters.BaseInFilter(field_name='id', lookup_expr='in')
-    # Дозволяє шукати через кому по SVG ID: ?svg_id__in=desk-1,desk-2
-    svg_id__in = django_filters.BaseInFilter(field_name='svg_element_id', lookup_expr='in')
+    id__in = django_filters.BaseInFilter(field_name="id", lookup_expr="in")
+    svg_id__in = django_filters.BaseInFilter(field_name="svg_element_id", lookup_expr="in")
 
     class Meta:
         model = Space
-        fields = ['floor', 'floor__location', 'space_type', 'capacity', 'is_active']
+        fields = ["floor", "floor__location", "space_type", "capacity", "is_active"]
 
-class SpaceViewSet(viewsets.ModelViewSet):
-    queryset = Space.objects.filter(is_active=True).order_by('name')
-    serializer_class = SpaceSerializer
+
+class BaseSpaceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsStaffOrReadOnly]
-    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
-    filterset_class = SpaceFilter
-    search_fields = ['name', 'description']
+    query_service = SpaceQueryService()
+
+    def get_serializer_class(self):
+        resource_map = SERIALIZER_ACTION_MAP.get(self.queryset.model, {})
+        return resource_map.get(
+            self.action,
+            resource_map.get("default", SpaceSerializer),
+        )
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        if hasattr(self.request.user, 'is_staff') and self.request.user.is_staff:
-            return Space.objects.all().order_by('name')
-        return qs
+        resource_key = self.resource_name
+        is_staff = getattr(self.request.user, "is_staff", False)
+        return self.query_service.queryset_for(resource_key, is_staff=is_staff)
+
+
+class LocationViewSet(BaseSpaceViewSet):
+    queryset = Location.objects.all()
+    resource_name = "location"
+
+
+class FloorViewSet(BaseSpaceViewSet):
+    queryset = Floor.objects.all()
+    resource_name = "floor"
+    filter_backends = [django_filters.DjangoFilterBackend]
+    filterset_fields = ["location", "level"]
+
+
+class AmenityViewSet(BaseSpaceViewSet):
+    queryset = Amenity.objects.all()
+    resource_name = "amenity"
+
+
+class SpaceViewSet(BaseSpaceViewSet):
+    queryset = Space.objects.all()
+    resource_name = "space"
+    filter_backends = [django_filters.DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = SpaceFilter
+    search_fields = ["name", "description"]

@@ -1,6 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useApi } from "@/hooks/use-api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import {
+  createBooking,
+  deleteBooking,
+  fetchBookings,
+  fetchMyBookings,
+  type CreateBookingPayload,
+} from "@/api/bookings";
+import { fetchSpaces } from "@/api/spaces";
 
 export interface Space {
   id: number;
@@ -22,60 +29,50 @@ export interface Booking {
 }
 
 export function useSpaces() {
-  const fetchApi = useApi();
   const { token } = useAuth();
 
   return useQuery({
     queryKey: ["spaces"],
-    queryFn: async () => {
-      const res = await fetchApi("/api/spaces/spaces/");
-      if (!res.ok) throw new Error("Failed to fetch spaces");
-      return res.json() as Promise<Space[]>;
-    },
+    queryFn: fetchSpaces,
     enabled: !!token,
   });
 }
 
 export function useMyBookings() {
-  const fetchApi = useApi();
   const { token } = useAuth();
 
   return useQuery({
     queryKey: ["my-bookings"],
-    queryFn: async () => {
-      const res = await fetchApi(`/api/bookings/`);
-      if (!res.ok) throw new Error("Failed to fetch bookings");
-      return res.json() as Promise<Booking[]>;
-    },
+    queryFn: fetchMyBookings,
     enabled: !!token,
   });
 }
 
 export function useDeleteBooking() {
-  const fetchApi = useApi();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (bookingId: number) => {
-      const res = await fetchApi(`/api/bookings/${bookingId}/`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to delete booking");
-      }
-      return bookingId;
-    },
+    mutationFn: deleteBooking,
     onSuccess: () => {
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
   });
 }
 
+export function useCreateBooking() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateBookingPayload) => createBooking(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+    },
+  });
+}
+
 export function useBookings(date: Date, startTime: number, endTime: number) {
-  const fetchApi = useApi();
   const { token } = useAuth();
 
   const startDateTime = new Date(date);
@@ -84,15 +81,11 @@ export function useBookings(date: Date, startTime: number, endTime: number) {
   const endDateTime = new Date(date);
   endDateTime.setHours(endTime, 0, 0, 0);
 
+  const query = `?start_time__gte=${startDateTime.toISOString()}&end_time__lte=${endDateTime.toISOString()}`;
+
   return useQuery({
     queryKey: ["bookings", startDateTime.toISOString(), endDateTime.toISOString()],
-    queryFn: async () => {
-      const res = await fetchApi(
-        `/api/bookings/?start_time__gte=${startDateTime.toISOString()}&end_time__lte=${endDateTime.toISOString()}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch bookings");
-      return res.json() as Promise<Booking[]>;
-    },
+    queryFn: () => fetchBookings(query),
     enabled: !!token,
   });
 }

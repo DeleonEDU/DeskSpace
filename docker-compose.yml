@@ -1,15 +1,17 @@
-version: '3.8'
-
 services:
   api_gateway:
     build: ./api_gateway
     ports:
       - "80:80"
     depends_on:
-      - frontend
-      - auth_service
-      - space_service
-      - booking_service
+      frontend:
+        condition: service_started
+      auth_service:
+        condition: service_healthy
+      space_service:
+        condition: service_healthy
+      booking_service:
+        condition: service_healthy
     networks:
       - deskspace_network
 
@@ -32,13 +34,21 @@ services:
       dockerfile: ./auth_service/Dockerfile
     volumes:
       - ./auth_service:/app
+      - ./shared:/shared
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_auth:5432/auth_db
     depends_on:
-      - db_auth
+      db_auth:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - deskspace_network
 
@@ -47,9 +57,16 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_DB=auth_db
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - deskspace_network
 
@@ -59,24 +76,39 @@ services:
       dockerfile: ./space_service/Dockerfile
     volumes:
       - ./space_service:/app
+      - ./shared:/shared
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_space:5432/space_db
     depends_on:
-      - db_space
+      db_space:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/health/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 50s
     networks:
       - deskspace_network
 
   db_space:
-    image: postgis/postgis:15-3.3-alpine
+    image: postgres:15-alpine
     env_file:
       - .env
     environment:
-      - POSTGRES_DB=space_db
+      POSTGRES_DB: space_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_space_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d space_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - deskspace_network
 
@@ -86,13 +118,24 @@ services:
       dockerfile: ./booking_service/Dockerfile
     volumes:
       - ./booking_service:/app
+      - ./shared:/shared
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db_booking:5432/booking_db
+      - SPACE_SERVICE_URL=http://space_service:8002
     depends_on:
-      - db_booking
+      db_booking:
+        condition: service_healthy
+      space_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/health/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - deskspace_network
 
@@ -101,9 +144,16 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_DB=booking_db
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres_booking_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d booking_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - deskspace_network
 

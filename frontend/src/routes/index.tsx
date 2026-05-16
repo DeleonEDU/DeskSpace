@@ -21,9 +21,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import { useSpaces, useBookings, type Space } from "@/hooks/use-booking";
+import { useSpaces, useBookings, useCreateBooking, type Space } from "@/hooks/use-booking";
 import { useAuth } from "@/context/AuthContext";
-import { useApi } from "@/hooks/use-api";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -43,7 +43,7 @@ const formatHour = (h: number) => `${String(Math.floor(h)).padStart(2, "0")}:00`
 
 function Index() {
   const { user, isLoading } = useAuth();
-  const fetchApi = useApi();
+  const createBooking = useCreateBooking();
   const [floor, setFloor] = useState(4);
   const [selected, setSelected] = useState<Space | null>(null);
   const [hovered, setHovered] = useState<Space | null>(null);
@@ -76,53 +76,21 @@ function Index() {
     endDateTime.setHours(timeRange[1], 0, 0, 0);
 
     try {
-      const response = await fetchApi("/api/bookings/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          space_id: selected.id,
-          start_time: startDateTime.toISOString(),
-          end_time: endDateTime.toISOString(),
-        }),
+      await createBooking.mutateAsync({
+        space_id: selected.id,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
       });
-
-      if (response.ok) {
-        setShowSuccess(true);
-        refetchBookings();
-      } else {
-        const errorData = await response.json();
-        toast.error(`Помилка бронювання: ${errorData.detail || "Спробуйте ще раз"}`);
-      }
+      setShowSuccess(true);
+      refetchBookings();
     } catch (error) {
-      console.error("Booking error:", error);
-      toast.error("Сталася помилка при бронюванні.");
+      const message = error instanceof Error ? error.message : "Спробуйте ще раз";
+      toast.error(`Помилка бронювання: ${message}`);
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 shadow-sm">
-            <svg viewBox="0 0 24 24" fill="none" className="size-8 text-primary absolute">
-              <path
-                d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-          </div>
-          <p className="animate-pulse font-display text-sm font-medium text-muted-foreground tracking-widest uppercase">
-            Завантаження
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {

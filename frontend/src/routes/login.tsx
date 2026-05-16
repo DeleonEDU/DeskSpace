@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate, Link, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { login as loginApi, fetchProfile } from "@/api/auth";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,28 +21,9 @@ function Login() {
   const navigate = useNavigate();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10 shadow-sm">
-            <svg viewBox="0 0 24 24" fill="none" className="size-8 text-primary absolute">
-              <path
-                d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-          </div>
-          <p className="animate-pulse font-display text-sm font-medium text-muted-foreground tracking-widest uppercase">
-            Завантаження
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
+
   if (user) return <Navigate to="/" />;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,30 +32,12 @@ function Login() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/auth/token/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Невірний email або пароль");
-      }
-
-      const data = await res.json();
-
-      // Fetch user profile
-      const profileRes = await fetch("/api/auth/profile/", {
-        headers: { Authorization: `Bearer ${data.access}` },
-      });
-
-      if (profileRes.ok) {
-        const userData = await profileRes.json();
-        login(data.access, data.refresh, userData);
-        navigate({ to: "/" });
-      }
-    } catch (err: any) {
-      setError(err.message);
+      const data = await loginApi(email, password);
+      const userData = await fetchProfile(data.access);
+      login(data.access, data.refresh, userData);
+      navigate({ to: "/" });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Невірний email або пароль");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +46,6 @@ function Login() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-[400px] rounded-[2rem] bg-card/80 p-8 shadow-[var(--shadow-card)] ring-1 ring-border/60 backdrop-blur-xl sm:p-10">
-        {/* Logo/Icon */}
         <div className="mx-auto mb-6 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
           <svg viewBox="0 0 24 24" fill="none" className="size-6">
             <path

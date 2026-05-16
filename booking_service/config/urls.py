@@ -17,7 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from deskspace_common.health import health_view
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/bookings/', include('bookings.urls')),
+    path("admin/", admin.site.urls),
+    path("health/", lambda request: health_view(request, "booking_service")),
+    path("api/bookings/", include("bookings.urls")),
 ]

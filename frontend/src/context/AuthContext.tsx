@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  phone_number: string;
-}
+import {
+  clearTokens,
+  getStoredTokens,
+  refreshAccessToken,
+  storeTokens,
+} from "@/api/client";
+import { fetchProfile } from "@/api/auth";
+import type { User } from "@/types/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -27,68 +26,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedRefreshToken = localStorage.getItem("refreshToken");
-    if (storedToken && storedRefreshToken) {
-      setToken(storedToken);
-      setRefreshToken(storedRefreshToken);
-      fetchUser(storedToken, storedRefreshToken);
+    const { access, refresh } = getStoredTokens();
+    if (access && refresh) {
+      setToken(access);
+      setRefreshToken(refresh);
+      loadUser(access, refresh);
     } else {
       setIsLoading(false);
     }
   }, []);
 
-  const refreshAccessToken = async (currentRefreshToken: string) => {
+  const loadUser = async (access: string, refresh: string) => {
     try {
-      const response = await fetch("/api/auth/token/refresh/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refresh: currentRefreshToken }),
-      });
+      let activeToken = access;
+      let profile = await fetchProfile(activeToken).catch(() => null);
 
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("token", data.access);
-        setToken(data.access);
-        return data.access;
-      }
-    } catch (error) {
-      console.error("Failed to refresh token", error);
-    }
-    return null;
-  };
-
-  const fetchUser = async (currentToken: string, currentRefreshToken: string) => {
-    try {
-      let response = await fetch("/api/auth/profile/", {
-        headers: {
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
-
-      if (response.status === 401) {
-        // Token expired, try to refresh
-        const newToken = await refreshAccessToken(currentRefreshToken);
-        if (newToken) {
-          response = await fetch("/api/auth/profile/", {
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-            },
-          });
+      if (!profile) {
+        const renewed = await refreshAccessToken(refresh);
+        if (!renewed) {
+          logout();
+          return;
         }
+        activeToken = renewed;
+        setToken(renewed);
+        profile = await fetchProfile(renewed);
       }
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        // Refresh failed or other error
-        logout();
-      }
-    } catch (error) {
-      console.error("Failed to fetch user", error);
+      setUser(profile);
+    } catch {
       logout();
     } finally {
       setIsLoading(false);
@@ -96,16 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = (newToken: string, newRefreshToken: string, newUser: User) => {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("refreshToken", newRefreshToken);
+    storeTokens(newToken, newRefreshToken);
     setToken(newToken);
     setRefreshToken(newRefreshToken);
     setUser(newUser);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    clearTokens();
     setToken(null);
     setRefreshToken(null);
     setUser(null);

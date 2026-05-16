@@ -13,6 +13,13 @@ COPY space_service/requirements.txt /app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+COPY shared/ /shared/
+COPY scripts/entrypoint-space.sh /entrypoint.sh
 COPY space_service/ /app/
 
-CMD ["sh", "-c", "sleep 10 && python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8002"]
+ENV PYTHONPATH=/shared
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 8002
+
+ENTRYPOINT ["/entrypoint.sh"]
