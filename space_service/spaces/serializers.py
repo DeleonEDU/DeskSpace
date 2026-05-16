@@ -13,6 +13,7 @@ class SpaceListSerializer(serializers.ModelSerializer):
     space_type_display = serializers.CharField(
         source="get_space_type_display", read_only=True
     )
+    floor_level = serializers.IntegerField(source="floor.level", read_only=True)
 
     class Meta:
         model = Space
@@ -27,6 +28,7 @@ class SpaceListSerializer(serializers.ModelSerializer):
             "svg_element_id",
             "is_active",
             "floor",
+            "floor_level",
         ]
 
 

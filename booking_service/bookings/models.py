@@ -2,7 +2,6 @@ from django.db import models
 
 class Booking(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
         ('cancelled', 'Cancelled'),
     ]

@@ -116,6 +116,12 @@ class SpaceServiceIntegrationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_space_list_includes_floor_level(self):
+        response = self.normal_client.get(self.space_list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]["floor_level"], self.floor.level)
+        self.assertEqual(response.data[0]["floor"], self.floor.id)
+
     def test_space_inactive_visibility(self):
         Space.objects.create(
             floor=self.floor,

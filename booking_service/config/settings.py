@@ -1,11 +1,11 @@
 from pathlib import Path
-import sys
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str((BASE_DIR.parent / "shared").resolve()))
 
-from deskspace_common.config import get_secret_key
+from deskspace_common.config import configure_shared_path, get_secret_key
+
+configure_shared_path(BASE_DIR)
 
 env = environ.Env(DEBUG=(bool, True))
 environ.Env.read_env(BASE_DIR / ".env")

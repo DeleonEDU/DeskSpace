@@ -189,7 +189,7 @@ function ProfilePage() {
                           {b.space?.name || "Невідоме місце"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {b.space?.floor || "?"}-й поверх
+                          {b.space?.floor_level ?? "?"}-й поверх
                         </p>
                       </div>
                       <div className="flex items-center gap-4">
@@ -267,7 +267,7 @@ function ProfilePage() {
                             )}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {b.space?.floor || "?"}-й поверх · {b.dateStr}
+                            {b.space?.floor_level ?? "?"}-й поверх · {b.dateStr}
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">{b.timeStr}</span>

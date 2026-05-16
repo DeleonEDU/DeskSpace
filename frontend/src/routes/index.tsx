@@ -59,7 +59,10 @@ function Index() {
     timeRange[1],
   );
 
-  const floorSpaces = useMemo(() => spaces.filter((s) => s.floor === floor), [spaces, floor]);
+  const floorSpaces = useMemo(
+    () => spaces.filter((s) => s.floor_level === floor),
+    [spaces, floor],
+  );
   const occupiedSpaceIds = useMemo(() => new Set(bookings.map((b) => b.space_id)), [bookings]);
 
   const tooltip = hovered;

@@ -55,12 +55,14 @@ class BookingIntegrationTests(APITestCase):
         self.assertEqual(booking.status, "confirmed")
 
     def test_create_booking_space_not_found(self, mock_fetch):
+        mock_fetch.side_effect = None
         mock_fetch.return_value = None
         response = self.client.post(self.booking_list_url, self.booking_data)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(Booking.objects.count(), 0)
 
     def test_create_booking_inactive_space(self, mock_fetch):
+        mock_fetch.side_effect = None
         mock_fetch.return_value = SpaceSnapshot(id=1, is_active=False, name="Closed")
         response = self.client.post(self.booking_list_url, self.booking_data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

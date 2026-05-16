@@ -1,6 +1,23 @@
+from contextlib import contextmanager
+
+from django.db import connection, transaction
+
 from bookings.domain.constants import BookingStatus
 from bookings.models import Booking
 from bookings.specifications.overlap import OverlapSpecification
+
+
+@contextmanager
+def _lock_space_booking(space_id: int):
+    """Serialize bookings per space (PostgreSQL advisory lock; SQLite best-effort)."""
+    if connection.vendor == "postgresql":
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT pg_advisory_xact_lock(%s)", [space_id])
+        yield
+        return
+
+    Booking.objects.filter(space_id=space_id).select_for_update()
+    yield
 
 
 class BookingRepository:
@@ -20,6 +37,18 @@ class BookingRepository:
             end_time=end_time,
             status=BookingStatus.CONFIRMED,
         )
+
+    def create_confirmed_atomic(
+        self, user_id: int, space_id: int, start_time, end_time
+    ) -> Booking | None:
+        """Create booking if no overlap; returns None when slot is taken (race-safe)."""
+        with transaction.atomic():
+            with _lock_space_booking(space_id):
+                if OverlapSpecification(space_id, start_time, end_time).is_satisfied():
+                    return None
+                return self.create_confirmed(
+                    user_id, space_id, start_time, end_time
+                )
 
     def cancel(self, booking: Booking) -> Booking:
         booking.status = BookingStatus.CANCELLED

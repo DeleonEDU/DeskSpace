@@ -49,14 +49,15 @@ class BookingService:
     ):
         snapshot = self._fetch_and_validate_space(space_id, auth_header)
 
-        if self.repository.has_overlap(space_id, start_time, end_time):
+        booking = self.repository.create_confirmed_atomic(
+            user_id, space_id, start_time, end_time
+        )
+        if booking is None:
             raise BookingConflictError(
                 "This space is already booked for the selected time."
             )
 
-        return self.repository.create_confirmed(
-            user_id, space_id, start_time, end_time
-        ), snapshot
+        return booking, snapshot
 
     def cancel_booking(self, booking):
         now = timezone.now()

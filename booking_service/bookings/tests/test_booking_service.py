@@ -70,6 +70,23 @@ class BookingServiceTests(TestCase):
                 auth_header="Bearer token",
             )
 
+    def test_create_confirmed_atomic_rejects_overlap(self):
+        self.space_client.fetch_space.return_value = self.active_space
+        Booking.objects.create(
+            user_id=2,
+            space_id=1,
+            start_time=self.start,
+            end_time=self.end,
+            status="confirmed",
+        )
+        booking = self.service.repository.create_confirmed_atomic(
+            user_id=1,
+            space_id=1,
+            start_time=self.start + timedelta(minutes=30),
+            end_time=self.end + timedelta(minutes=30),
+        )
+        self.assertIsNone(booking)
+
     def test_cancel_past_booking_blocked(self):
         booking = Booking.objects.create(
             user_id=1,

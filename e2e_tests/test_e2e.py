@@ -68,7 +68,10 @@ def test_e2e_full_flow(session, user_data):
     
     spaces = spaces_response.json()
     if not spaces:
-        pytest.skip("No spaces available in the database to test booking. Please run seed.py first.")
+        pytest.skip(
+            "No spaces available in the database to test booking. "
+            "Run: docker compose exec space_service python manage.py seed_spaces"
+        )
         
     target_space = spaces[0]
     space_id = target_space["id"]

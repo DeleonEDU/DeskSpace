@@ -16,5 +16,5 @@ class SpaceSnapshot:
             id=payload["id"],
             is_active=payload.get("is_active", True),
             name=payload.get("name", ""),
-            floor=payload.get("floor"),
+            floor=payload.get("floor_level"),
         )

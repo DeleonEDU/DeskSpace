@@ -39,18 +39,3 @@ export async function deleteBooking(bookingId: number): Promise<void> {
     );
   }
 }
-
-export async function checkAvailability(params: {
-  space_id: number;
-  start_time: string;
-  end_time: string;
-}): Promise<boolean> {
-  const search = new URLSearchParams({
-    space_id: String(params.space_id),
-    start_time: params.start_time,
-    end_time: params.end_time,
-  });
-  const response = await apiFetch(`/api/bookings/check_availability/?${search}`);
-  const data = await parseJson<{ available: boolean }>(response);
-  return data.available;
-}

@@ -39,7 +39,7 @@ DeskSpace/
 │   │   ├── tests/          # Юніт та інтеграційні тести
 │   │   └── ...
 │   ├── requirements.txt
-│   ├── seed.py             # Скрипт для наповнення БД
+│   └── management/commands/seed_spaces.py  # Наповнення БД
 │   └── Dockerfile
 ├── e2e_tests/              # End-to-End тести (Pytest)
 │   └── test_e2e.py
@@ -89,7 +89,7 @@ docker-compose exec booking_service python manage.py migrate
 Щоб інтерфейс не був порожнім, необхідно додати початкові дані (поверхи, кімнати, столи). Для цього виконайте скрипт сідінгу в `space_service`:
 
 ```bash
-docker-compose exec space_service python seed.py
+docker compose exec space_service python manage.py seed_spaces
 ```
 
 ### 5. Використання додатку

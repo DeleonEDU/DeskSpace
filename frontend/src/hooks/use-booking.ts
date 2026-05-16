@@ -17,7 +17,7 @@ export interface Space {
   capacity: number;
   price_per_hour: string;
   svg_element_id: string;
-  floor: number;
+  floor_level: number;
 }
 
 export interface Booking {

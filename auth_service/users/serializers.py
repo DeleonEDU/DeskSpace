@@ -41,10 +41,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        from users.repositories.user_repository import UserRepository
-
-        validated_data.pop("password_confirmation")
-        return UserRepository().create_user(**validated_data)
+        return AuthService().register_user(validated_data)
 
 
 class DeskspaceTokenObtainPairSerializer(TokenObtainPairSerializer):
