@@ -1,5 +1,8 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { TopBar } from "@/components/booking/TopBar";
+import { PageShell } from "@/components/layout/PageShell";
+import { formatPhoneDisplay } from "@/lib/phone";
+import { labelCaps } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 import {
   Calendar,
   Clock,
@@ -13,7 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { useMyBookings, useSpaces, useDeleteBooking } from "@/hooks/use-booking";
+import { useMyBookings, useSpaces, useDeleteBooking, type Booking, type Space } from "@/hooks/use-booking";
 import { format, isAfter } from "date-fns";
 import { toast } from "sonner";
 import { uk } from "date-fns/locale";
@@ -33,14 +36,21 @@ export const Route = createFileRoute("/profile")({
   component: ProfilePage,
   head: () => ({
     meta: [
-      { title: "Мій профіль — cospace" },
+      { title: "Мій профіль — DeskSpace" },
       {
         name: "description",
-        content: "Профіль користувача cospace: ваші бронювання, історія та налаштування.",
+        content: "Ваші бронювання, історія та контакти.",
       },
     ],
   }),
 });
+
+type EnrichedBooking = Booking & {
+  space?: Space;
+  isUpcoming: boolean;
+  dateStr: string;
+  timeStr: string;
+};
 
 function ProfilePage() {
   const { user, isLoading } = useAuth();
@@ -52,24 +62,21 @@ function ProfilePage() {
     try {
       await deleteBooking.mutateAsync(id);
       toast.success("Бронювання успішно скасовано");
-    } catch (error: any) {
-      toast.error(error.message || "Помилка при скасуванні бронювання");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Помилка при скасуванні");
     }
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" />;
 
   const now = new Date();
 
-  const enrichedBookings = bookings
-    .map((b: any) => {
-      const space = spaces.find((s: any) => s.id === b.space_id);
+  const enrichedBookings: EnrichedBooking[] = bookings
+    .map((b) => {
+      const space = spaces.find((s) => s.id === b.space_id);
       const startDate = new Date(b.start_time);
       const endDate = new Date(b.end_time);
-
       return {
         ...b,
         space,
@@ -78,207 +85,203 @@ function ProfilePage() {
         timeStr: `${format(startDate, "HH:mm")} – ${format(endDate, "HH:mm")}`,
       };
     })
-    .sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
   const upcoming = enrichedBookings
-    .filter((b: any) => b.isUpcoming && b.status !== "cancelled")
+    .filter((b) => b.isUpcoming && b.status !== "cancelled")
     .reverse();
 
   const totalHours = enrichedBookings
-    .filter((b: any) => !b.isUpcoming)
-    .reduce((acc: number, b: any) => {
-      if (b.status === "cancelled") return acc;
+    .filter((b) => !b.isUpcoming && b.status !== "cancelled")
+    .reduce((acc, b) => {
       const start = new Date(b.start_time);
       const end = new Date(b.end_time);
       return acc + (end.getTime() - start.getTime()) / (1000 * 60 * 60);
     }, 0);
 
+  const bookingCount = enrichedBookings.filter((b) => b.status !== "cancelled").length;
+
   return (
-    <main className="min-h-screen px-4 py-6 lg:px-10 lg:py-8">
-      <div className="mx-auto flex max-w-[1100px] flex-col gap-5">
-        <TopBar />
+    <PageShell maxWidth="profile">
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
+        <Link to="/" className="transition-colors hover:text-foreground">
+          Головна
+        </Link>
+        <ChevronRight className="size-3.5" aria-hidden />
+        <span className="font-medium text-foreground">Мій профіль</span>
+      </nav>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">
-            Головна
-          </Link>
-          <ChevronRight className="size-3.5" />
-          <span className="text-foreground">Мій профіль</span>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-          {/* Profile card */}
-          <aside className="flex flex-col gap-5 rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-card)] backdrop-blur-xl">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[oklch(0.72_0.16_280)] font-display text-3xl font-semibold text-primary-foreground shadow-[var(--shadow-soft)]">
-                {user.first_name?.[0]}
-                {user.last_name?.[0]}
-              </div>
-              <h2 className="mt-4 font-display text-xl font-semibold tracking-tight">
-                {user.first_name} {user.last_name}
-              </h2>
-              <p className="text-sm text-muted-foreground">Учасник</p>
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        <aside className="surface-lg flex flex-col gap-6 p-6 sm:p-8">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex size-24 items-center justify-center rounded-2xl bg-primary font-display text-3xl font-bold text-primary-foreground shadow-[var(--shadow-glow)]">
+              {user.first_name?.[0]}
+              {user.last_name?.[0]}
             </div>
+            <h2 className="mt-4 font-display text-xl font-bold">
+              {user.first_name} {user.last_name}
+            </h2>
+            <p className="text-sm text-muted-foreground">Учасник coworking</p>
+          </div>
 
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-3 text-foreground">
-                <Mail className="size-4 text-primary" />
-                <span>{user.email}</span>
+          <ul className="space-y-3 text-sm">
+            {[
+              { icon: Mail, value: user.email },
+              { icon: Phone, value: formatPhoneDisplay(user.phone_number) },
+              { icon: MapPin, value: "Київ, Україна" },
+            ].map(({ icon: Icon, value }) => (
+              <li key={value} className="flex items-center gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary ring-1 ring-border/60">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <span className="font-medium break-all">{value}</span>
               </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <Phone className="size-4 text-primary" />
-                <span>{user.phone_number}</span>
-              </li>
-              <li className="flex items-center gap-3 text-foreground">
-                <MapPin className="size-4 text-primary" />
-                <span>Київ, Україна</span>
-              </li>
-            </ul>
+            ))}
+          </ul>
 
-            <button className="flex items-center justify-center gap-2 rounded-full bg-secondary px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-accent">
-              <Settings className="size-4" /> Налаштування
-            </button>
-          </aside>
+          <button
+            type="button"
+            className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl border border-border/60 bg-secondary py-3 text-sm font-semibold transition-colors hover:bg-accent"
+          >
+            <Settings className="size-4" aria-hidden />
+            Налаштування
+          </button>
+        </aside>
 
-          {/* Right column */}
-          <div className="flex flex-col gap-5">
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  v: enrichedBookings
-                    .filter((b: any) => b.status !== "cancelled")
-                    .length.toString(),
-                  l: "Бронювань",
-                },
-                { v: `${Math.round(totalHours)} год`, l: "Загалом" },
-              ].map((s) => (
-                <div
-                  key={s.l}
-                  className="rounded-2xl bg-card p-4 ring-1 ring-border/60 shadow-[var(--shadow-soft)] backdrop-blur-xl"
-                >
-                  <p className="font-display text-2xl font-semibold tracking-tight text-foreground">
-                    {s.v}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{s.l}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Upcoming */}
-            <section className="rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-card)] backdrop-blur-xl">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-display text-base font-semibold tracking-tight">
-                  Майбутні бронювання
-                </h3>
-                <Link to="/" className="text-xs font-medium text-primary hover:underline">
-                  + Нове
-                </Link>
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { v: String(bookingCount), l: "Бронювань" },
+              { v: `${Math.round(totalHours)} год`, l: "Загалом" },
+            ].map((s) => (
+              <div key={s.l} className="surface p-5">
+                <p className="font-display text-3xl font-bold">{s.v}</p>
+                <p className={cn(labelCaps, "mt-1")}>{s.l}</p>
               </div>
-              {upcoming.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Немає майбутніх бронювань.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {upcoming.map((b: any) => (
+            ))}
+          </div>
+
+          <section className="surface-lg p-6 sm:p-8">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-display text-lg font-bold">Майбутні бронювання</h3>
+              <Link
+                to="/"
+                className="rounded-lg bg-primary/15 px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-primary/25"
+              >
+                + Нове
+              </Link>
+            </div>
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Немає майбутніх бронювань.</p>
+            ) : (
+              <ul className="space-y-2">
+                {upcoming.map((b) => (
+                  <li
+                    key={b.id}
+                    className="flex flex-col gap-3 rounded-xl border border-border/50 bg-secondary/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold">{b.space?.name ?? "Невідоме місце"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.space?.floor_level ?? "?"}-й поверх
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
+                      <div className="flex flex-wrap gap-2 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-2 py-1 ring-1 ring-border/50">
+                          <Calendar className="size-3 text-primary" aria-hidden />
+                          {b.dateStr}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-background/80 px-2 py-1 ring-1 ring-border/50">
+                          <Clock className="size-3 text-primary" aria-hidden />
+                          {b.timeStr}
+                        </span>
+                      </div>
+                      <CancelDialog
+                        pending={deleteBooking.isPending && deleteBooking.variables === b.id}
+                        onConfirm={() => handleDelete(b.id)}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="surface-lg p-6 sm:p-8">
+            <h3 className={cn("mb-5", labelCaps)}>Історія</h3>
+            {enrichedBookings.filter((b) => !b.isUpcoming).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Історія порожня.</p>
+            ) : (
+              <ul className="divide-y divide-border/50">
+                {enrichedBookings
+                  .filter((b) => !b.isUpcoming)
+                  .map((b) => (
                     <li
                       key={b.id}
-                      className="flex items-center justify-between rounded-2xl bg-secondary/70 px-4 py-3"
+                      className={`flex flex-wrap items-center justify-between gap-2 py-4 ${b.status === "cancelled" ? "opacity-50" : ""}`}
                     >
                       <div>
-                        <p className="font-display text-sm font-semibold">
-                          {b.space?.name || "Невідоме місце"}
+                        <p className="font-semibold">
+                          {b.space?.name ?? "Невідоме місце"}
+                          {b.status === "cancelled" && (
+                            <span className="ml-2 text-[10px] font-bold uppercase text-destructive">
+                              Скасовано
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {b.space?.floor_level ?? "?"}-й поверх
+                          {b.space?.floor_level ?? "?"}-й поверх · {b.dateStr}
                         </p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="size-3.5" />
-                            {b.dateStr}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="size-3.5" />
-                            {b.timeStr}
-                          </span>
-                        </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <button
-                              disabled={deleteBooking.isPending}
-                              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive active:scale-95 disabled:opacity-50"
-                              title="Скасувати бронювання"
-                            >
-                              {deleteBooking.isPending && deleteBooking.variables === b.id ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="size-4" />
-                              )}
-                            </button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Скасувати бронювання?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Ви впевнені, що хочете скасувати це бронювання? Цю дію неможливо
-                                відмінити.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Ні, залишити</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(b.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Так, скасувати
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                      <span className="rounded-md bg-secondary px-2 py-1 text-xs font-semibold">
+                        {b.timeStr}
+                      </span>
                     </li>
                   ))}
-                </ul>
-              )}
-            </section>
-
-            {/* History */}
-            <section className="rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-card)] backdrop-blur-xl">
-              <h3 className="mb-4 font-display text-base font-semibold tracking-tight">Історія</h3>
-              {enrichedBookings.filter((b: any) => !b.isUpcoming).length === 0 ? (
-                <p className="text-sm text-muted-foreground">Історія порожня.</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {enrichedBookings
-                    .filter((b: any) => !b.isUpcoming)
-                    .map((b: any) => (
-                      <li
-                        key={b.id}
-                        className={`flex items-center justify-between py-3 text-sm ${b.status === "cancelled" ? "opacity-50" : ""}`}
-                      >
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {b.space?.name || "Невідоме місце"}
-                            {b.status === "cancelled" && (
-                              <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                                Скасовано
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {b.space?.floor_level ?? "?"}-й поверх · {b.dateStr}
-                          </p>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{b.timeStr}</span>
-                      </li>
-                    ))}
-                </ul>
-              )}
-            </section>
-          </div>
+              </ul>
+            )}
+          </section>
         </div>
       </div>
-    </main>
+    </PageShell>
+  );
+}
+
+function CancelDialog({
+  pending,
+  onConfirm,
+}: {
+  pending: boolean;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button
+          type="button"
+          disabled={pending}
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+          title="Скасувати бронювання"
+        >
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="surface-lg border-0">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-display text-xl">Скасувати бронювання?</AlertDialogTitle>
+          <AlertDialogDescription>Цю дію неможливо відмінити.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-xl">Залишити</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Скасувати
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

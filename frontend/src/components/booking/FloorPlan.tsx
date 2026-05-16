@@ -1,4 +1,10 @@
-import { Space } from "@/hooks/use-booking";
+import { memo, useMemo } from "react";
+import type { Space } from "@/hooks/use-booking";
+import { SpaceShape } from "@/components/booking/SpaceShape";
+import { SPACE_LAYOUT, type SpaceLayoutRect } from "@/components/booking/space-layout";
+
+const VIEWBOX_W = 800;
+const VIEWBOX_H = 510;
 
 interface Props {
   spaces: Space[];
@@ -10,7 +16,7 @@ interface Props {
   floor: number;
 }
 
-export function FloorPlan({
+function FloorPlanComponent({
   spaces,
   occupiedSpaceIds,
   selectedId,
@@ -19,328 +25,197 @@ export function FloorPlan({
   onHover,
   floor,
 }: Props) {
-  const getStatus = (spaceId: number) => {
-    if (spaceId === selectedId) return "selected";
-    if (occupiedSpaceIds.has(spaceId)) return "occupied";
-    return "available";
-  };
+  const visibleSpaces = useMemo(
+    () => spaces.filter((s) => SPACE_LAYOUT[s.svg_element_id]),
+    [spaces],
+  );
 
-  const fillFor = (status: string) => {
-    if (status === "selected") return "var(--selected)";
-    if (status === "occupied") return "var(--occupied)";
-    return "var(--available)";
-  };
-
-  const textFor = (status: string) => {
-    if (status === "selected") return "var(--selected-foreground)";
-    if (status === "occupied") return "var(--occupied-foreground)";
-    return "var(--available-foreground)";
-  };
-
-  // We will map svg_element_id to visual coordinates
-  const layout: Record<
-    string,
-    { x: number; y: number; w: number; h: number; type: "room" | "desk" }
-  > = {
-    // Top rooms
-    r1: { x: 20, y: 20, w: 170, h: 140, type: "room" },
-    r2: { x: 210, y: 20, w: 170, h: 140, type: "room" },
-    r3: { x: 400, y: 20, w: 170, h: 140, type: "room" },
-
-    // Right rooms
-    r4: { x: 610, y: 20, w: 170, h: 140, type: "room" },
-    r5: { x: 610, y: 170, w: 170, h: 140, type: "room" },
-    r6: { x: 610, y: 320, w: 170, h: 170, type: "room" },
-
-    // Bottom rooms
-    r7: { x: 160, y: 330, w: 105, h: 80, type: "room" },
-    r8: { x: 280, y: 330, w: 100, h: 80, type: "room" },
-    r9: { x: 400, y: 330, w: 85, h: 160, type: "room" },
-    r10: { x: 500, y: 330, w: 85, h: 160, type: "room" },
-
-    // Left desks (Open space)
-    d1: { x: 30, y: 180, w: 40, h: 40, type: "desk" },
-    d2: { x: 90, y: 180, w: 40, h: 40, type: "desk" },
-    d3: { x: 30, y: 235, w: 40, h: 40, type: "desk" },
-    d4: { x: 90, y: 235, w: 40, h: 40, type: "desk" },
-    d5: { x: 30, y: 290, w: 40, h: 40, type: "desk" },
-    d6: { x: 90, y: 290, w: 40, h: 40, type: "desk" },
-    d7: { x: 30, y: 345, w: 40, h: 40, type: "desk" },
-    d8: { x: 90, y: 345, w: 40, h: 40, type: "desk" },
-    d9: { x: 30, y: 400, w: 40, h: 40, type: "desk" },
-    d10: { x: 90, y: 400, w: 40, h: 40, type: "desk" },
-
-    // Center desks (Open space)
-    d11: { x: 180, y: 190, w: 40, h: 40, type: "desk" },
-    d12: { x: 250, y: 190, w: 40, h: 40, type: "desk" },
-    d13: { x: 320, y: 190, w: 40, h: 40, type: "desk" },
-    d14: { x: 180, y: 250, w: 40, h: 40, type: "desk" },
-    d15: { x: 250, y: 250, w: 40, h: 40, type: "desk" },
-    d16: { x: 320, y: 250, w: 40, h: 40, type: "desk" },
-
-    // Bottom desks
-    d17: { x: 160, y: 440, w: 40, h: 40, type: "desk" },
-    d18: { x: 220, y: 440, w: 40, h: 40, type: "desk" },
-    d19: { x: 280, y: 440, w: 40, h: 40, type: "desk" },
-    d20: { x: 340, y: 440, w: 40, h: 40, type: "desk" },
-  };
+  const tooltipTarget = useMemo(() => {
+    if (hoveredId == null || hoveredId === selectedId) return null;
+    const space = visibleSpaces.find((s) => s.id === hoveredId);
+    if (!space) return null;
+    const layout = SPACE_LAYOUT[space.svg_element_id];
+    if (!layout) return null;
+    return { space, layout };
+  }, [hoveredId, selectedId, visibleSpaces]);
 
   return (
-    <div className="relative rounded-3xl bg-[var(--floor)] p-6 ring-1 ring-border/60">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="surface-lg flex flex-col p-5 sm:p-6">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
             Поверх
-          </p>
-          <h3 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+          </span>
+          <span className="font-display text-4xl font-bold leading-none text-foreground">
             {floor}
-          </h3>
-        </div>
-        <div className="flex items-center gap-5 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block size-2.5 rounded-full bg-[var(--available)] ring-1 ring-inset ring-black/5" />
-            Доступна
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block size-2.5 rounded-full bg-[var(--occupied)] ring-1 ring-inset ring-black/5" />
+        </div>
+        <ul className="flex flex-wrap gap-4 text-xs font-medium text-muted-foreground">
+          <li className="flex items-center gap-2">
+            <span className="size-2.5 rounded-sm bg-[var(--available)] ring-1 ring-[var(--available-border)]" />
+            Вільна
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="size-2.5 rounded-sm bg-[var(--occupied)] ring-1 ring-[var(--occupied-border)]" />
             Зайнята
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block size-2.5 rounded-full bg-[var(--selected)]" />
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="size-2.5 rounded-sm bg-primary shadow-[var(--shadow-glow)]" />
             Обрана
-          </span>
-        </div>
+          </li>
+        </ul>
       </div>
 
-      <svg
-        viewBox="0 0 800 510"
-        className="h-auto w-full"
-        role="img"
-        aria-label={`План ${floor}-го поверху`}
-      >
-        {/* Outline of the floor */}
-        <rect
-          x="10"
-          y="10"
-          width="780"
-          height="490"
-          rx="18"
-          fill="none"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-
-        {/* Walls / separators */}
-        <line
-          x1="10"
-          y1="170"
-          x2="600"
-          y2="170"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="600"
-          y1="10"
-          x2="600"
-          y2="500"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="200"
-          y1="10"
-          x2="200"
-          y2="170"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="390"
-          y1="10"
-          x2="390"
-          y2="170"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-
-        <line
-          x1="150"
-          y1="170"
-          x2="150"
-          y2="420"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="150"
-          y1="320"
-          x2="600"
-          y2="320"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="150"
-          y1="420"
-          x2="390"
-          y2="420"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-
-        <line
-          x1="275"
-          y1="320"
-          x2="275"
-          y2="420"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="390"
-          y1="320"
-          x2="390"
-          y2="500"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-        <line
-          x1="495"
-          y1="320"
-          x2="495"
-          y2="500"
-          stroke="var(--wall)"
-          strokeOpacity="0.35"
-          strokeWidth="4"
-        />
-
-        {/* Doors */}
-        <rect x="180" y="168" width="40" height="4" fill="var(--floor)" />
-        <rect x="370" y="168" width="40" height="4" fill="var(--floor)" />
-        <rect x="598" y="120" width="4" height="40" fill="var(--floor)" />
-        <rect x="598" y="260" width="4" height="40" fill="var(--floor)" />
-        <rect x="598" y="400" width="4" height="40" fill="var(--floor)" />
-        <rect x="148" y="380" width="4" height="40" fill="var(--floor)" />
-        <rect x="200" y="318" width="40" height="4" fill="var(--floor)" />
-        <rect x="320" y="318" width="40" height="4" fill="var(--floor)" />
-        <rect x="420" y="318" width="40" height="4" fill="var(--floor)" />
-        <rect x="520" y="318" width="40" height="4" fill="var(--floor)" />
-
-        {/* Plants (Вазонки) */}
-        <g stroke="var(--wall)" strokeOpacity="0.5" strokeWidth="2" fill="#86efac">
-          <circle cx="40" cy="460" r="12" />
-          <circle cx="40" cy="460" r="6" fill="#4ade80" />
-          <circle cx="750" cy="460" r="16" />
-          <circle cx="750" cy="460" r="8" fill="#4ade80" />
-          <circle cx="750" cy="40" r="14" />
-          <circle cx="750" cy="40" r="7" fill="#4ade80" />
-          <circle cx="420" cy="460" r="12" />
-          <circle cx="420" cy="460" r="6" fill="#4ade80" />
-        </g>
-
-        {/* Lounge area */}
-        <rect
-          x="420"
-          y="200"
-          width="140"
-          height="80"
-          rx="8"
-          fill="var(--wall)"
-          fillOpacity="0.1"
-          stroke="var(--wall)"
-          strokeOpacity="0.2"
-        />
-        <circle cx="490" cy="240" r="20" fill="var(--wall)" fillOpacity="0.2" />
-        <text
-          x="490"
-          y="244"
-          fontSize="12"
-          textAnchor="middle"
-          fill="var(--wall)"
-          fillOpacity="0.6"
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+          className="h-auto w-full max-h-[min(70vh,520px)]"
+          role="img"
+          aria-label={`План ${floor}-го поверху`}
         >
-          Lounge
-        </text>
-
-        {spaces.map((space) => {
-          const l = layout[space.svg_element_id];
-          if (!l) return null;
-
-          const status = getStatus(space.id);
-          const isSelected = status === "selected";
-          const isHover = space.id === hoveredId;
-          const isOccupied = status === "occupied";
-
-          return (
-            <g
-              key={space.id}
-              onClick={() => !isOccupied && onSelect(space)}
-              onMouseEnter={() => onHover(space)}
-              onMouseLeave={() => onHover(null)}
-              className={isOccupied ? "cursor-not-allowed" : "cursor-pointer"}
-            >
-              <rect
-                x={l.x}
-                y={l.y}
-                width={l.w}
-                height={l.h}
-                rx={l.type === "room" ? 12 : 6}
-                fill={fillFor(status)}
-                stroke={isSelected ? "var(--selected)" : "var(--wall)"}
-                strokeOpacity={isSelected ? 1 : 0.18}
-                strokeWidth={isSelected ? 2 : 1}
-                style={{
-                  transition: "all 220ms cubic-bezier(0.4, 0, 0.2, 1)",
-                  filter: isSelected
-                    ? "drop-shadow(0 10px 24px oklch(0.62 0.16 255 / 0.35))"
-                    : isHover && !isOccupied
-                      ? "drop-shadow(0 6px 16px oklch(0.5 0.05 250 / 0.18))"
-                      : "none",
-                  transformOrigin: `${l.x + l.w / 2}px ${l.y + l.h / 2}px`,
-                  transform: isHover && !isOccupied ? "scale(1.02)" : "scale(1)",
-                }}
+          <rect
+            x="10"
+            y="10"
+            width="780"
+            height="490"
+            rx="16"
+            fill="var(--floor)"
+            stroke="var(--wall)"
+            strokeOpacity="0.35"
+            strokeWidth="2"
+          />
+          <Walls />
+          <LoungeDecor />
+          {visibleSpaces.map((space) => {
+            const l = SPACE_LAYOUT[space.svg_element_id]!;
+            return (
+              <SpaceShape
+                key={space.id}
+                space={space}
+                layout={l}
+                selectedId={selectedId}
+                isOccupied={occupiedSpaceIds.has(space.id)}
+                isHovered={hoveredId === space.id}
+                onSelect={onSelect}
+                onHover={onHover}
               />
-              {l.type === "room" ? (
-                <foreignObject x={l.x} y={l.y} width={l.w} height={l.h} pointerEvents="none">
-                  <div
-                    className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center"
-                    style={{ color: textFor(status) }}
-                  >
-                    <span className="font-display text-sm font-semibold tracking-tight">
-                      {space.name}
-                    </span>
-                    {space.capacity && (
-                      <span className="text-[10px] opacity-80">{space.capacity} місць</span>
-                    )}
-                  </div>
-                </foreignObject>
-              ) : (
-                <foreignObject x={l.x} y={l.y} width={l.w} height={l.h} pointerEvents="none">
-                  <div
-                    className="flex h-full w-full items-center justify-center text-center"
-                    style={{ color: textFor(status) }}
-                  >
-                    <span className="text-[10px] font-bold">
-                      {space.name.replace("Стіл #", "#")}
-                    </span>
-                  </div>
-                </foreignObject>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+            );
+          })}
+        </svg>
+
+        {tooltipTarget && (
+          <SpaceHoverTooltip
+            space={tooltipTarget.space}
+            layout={tooltipTarget.layout}
+            isOccupied={occupiedSpaceIds.has(tooltipTarget.space.id)}
+          />
+        )}
+      </div>
     </div>
   );
 }
+
+function SpaceHoverTooltip({
+  space,
+  layout,
+  isOccupied,
+}: {
+  space: Space;
+  layout: SpaceLayoutRect;
+  isOccupied: boolean;
+}) {
+  const centerX = layout.x + layout.w / 2;
+  const leftPct = (centerX / VIEWBOX_W) * 100;
+  const topPct = (layout.y / VIEWBOX_H) * 100;
+
+  return (
+    <div
+      className="pointer-events-none absolute z-20 min-w-[140px] max-w-[200px] rounded-xl border border-border/70 bg-popover px-3 py-2.5 text-popover-foreground shadow-[var(--shadow-card)]"
+      style={{
+        left: `${leftPct}%`,
+        top: `${topPct}%`,
+        transform: "translate(-50%, calc(-100% - 10px))",
+      }}
+      role="status"
+    >
+      <p className="font-display text-sm font-bold leading-tight">{space.name}</p>
+      <p className="mt-1 text-xs">
+        <span
+          className="font-semibold"
+          style={{ color: isOccupied ? "var(--status-occupied)" : "var(--status-available)" }}
+        >
+          {isOccupied ? "Зайнята" : "Вільна"}
+        </span>
+        {space.capacity ? (
+          <span className="text-muted-foreground"> · {space.capacity} місць</span>
+        ) : null}
+      </p>
+      <div
+        className="absolute left-1/2 top-full size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-border/70 bg-popover"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+function Walls() {
+  const wall = { stroke: "var(--wall)", strokeOpacity: 0.35, strokeWidth: 4 };
+  const door = { fill: "var(--floor)" };
+  return (
+    <>
+      <line x1="10" y1="170" x2="600" y2="170" {...wall} />
+      <line x1="600" y1="10" x2="600" y2="500" {...wall} />
+      <line x1="200" y1="10" x2="200" y2="170" {...wall} />
+      <line x1="390" y1="10" x2="390" y2="170" {...wall} />
+      <line x1="150" y1="170" x2="150" y2="420" {...wall} />
+      <line x1="150" y1="320" x2="600" y2="320" {...wall} />
+      <line x1="150" y1="420" x2="390" y2="420" {...wall} />
+      <line x1="275" y1="320" x2="275" y2="420" {...wall} />
+      <line x1="390" y1="320" x2="390" y2="500" {...wall} />
+      <line x1="495" y1="320" x2="495" y2="500" {...wall} />
+      <rect x="180" y="168" width="40" height="4" {...door} />
+      <rect x="370" y="168" width="40" height="4" {...door} />
+      <rect x="598" y="120" width="4" height="40" {...door} />
+      <rect x="598" y="260" width="4" height="40" {...door} />
+      <rect x="598" y="400" width="4" height="40" {...door} />
+      <rect x="148" y="380" width="4" height="40" {...door} />
+      <rect x="200" y="318" width="40" height="4" {...door} />
+      <rect x="320" y="318" width="40" height="4" {...door} />
+      <rect x="420" y="318" width="40" height="4" {...door} />
+      <rect x="520" y="318" width="40" height="4" {...door} />
+    </>
+  );
+}
+
+function LoungeDecor() {
+  return (
+    <g opacity="0.9">
+      <rect
+        x="410"
+        y="190"
+        width="160"
+        height="110"
+        rx="10"
+        fill="var(--secondary)"
+        fillOpacity="0.5"
+        stroke="var(--wall)"
+        strokeOpacity="0.15"
+        strokeDasharray="5 4"
+      />
+      <circle cx="490" cy="245" r="18" fill="var(--card)" stroke="var(--border)" strokeWidth="1" />
+      <text
+        x="490"
+        y="248"
+        textAnchor="middle"
+        fontSize="9"
+        fontWeight="700"
+        letterSpacing="0.08em"
+        fill="var(--muted-foreground)"
+      >
+        LOUNGE
+      </text>
+    </g>
+  );
+}
+
+export const FloorPlan = memo(FloorPlanComponent);

@@ -1,29 +1,33 @@
+import { memo } from "react";
 import { floors } from "@/lib/booking-data";
+import { cn } from "@/lib/utils";
 
 interface Props {
   current: number;
   onChange: (floor: number) => void;
 }
 
-const ROW_H = 44; // height per floor row (button + gap)
+const ROW_H = 44;
 
-export function BuildingSelector({ current, onChange }: Props) {
+function BuildingSelectorComponent({ current, onChange }: Props) {
   return (
-    <div className="flex items-start gap-4">
-      {/* Floor buttons */}
-      <div className="flex flex-col gap-2">
+    <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-2" role="tablist" aria-label="Поверхи">
         {floors.map((f) => {
           const active = f === current;
           return (
             <button
               key={f}
+              type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => onChange(f)}
-              className={`flex size-9 items-center justify-center rounded-full text-xs font-semibold transition-all ${
+              className={cn(
+                "flex size-10 items-center justify-center rounded-xl text-sm font-bold transition-colors",
                 active
-                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-soft)] scale-105"
-                  : "bg-secondary text-foreground hover:bg-accent"
-              }`}
-              aria-label={`Поверх ${f}`}
+                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                  : "bg-secondary text-foreground ring-1 ring-border/60 hover:bg-accent",
+              )}
             >
               {f}
             </button>
@@ -31,70 +35,67 @@ export function BuildingSelector({ current, onChange }: Props) {
         })}
       </div>
 
-      {/* Building — each floor aligned with its button */}
       <svg
-        viewBox={`0 0 160 ${floors.length * ROW_H + 10}`}
-        className="w-auto"
-        style={{ height: floors.length * ROW_H + 10 }}
+        viewBox={`0 0 140 ${floors.length * ROW_H + 8}`}
+        className="w-[120px] shrink-0"
+        style={{ height: floors.length * ROW_H + 8 }}
+        aria-hidden
       >
-        {/* Ground line */}
         <line
-          x1="10"
-          y1={floors.length * ROW_H + 4}
-          x2="150"
-          y2={floors.length * ROW_H + 4}
-          stroke="oklch(0.85 0.01 250)"
-          strokeWidth="1"
+          x1="8"
+          y1={floors.length * ROW_H + 2}
+          x2="132"
+          y2={floors.length * ROW_H + 2}
+          stroke="var(--border)"
+          strokeWidth="2"
+          strokeLinecap="round"
         />
-
         {floors.map((f, idx) => {
           const active = f === current;
-          // Button center y in the column = idx * (size+gap) + size/2
-          // size = 36 (size-9), gap = 8 → row = 44, center = idx*44 + 18
           const cy = idx * ROW_H + 18;
-          const blockH = 32;
+          const blockH = 28;
           const y = cy - blockH / 2;
-          const inset = idx * 1.5;
-          const x = 18 + inset;
-          const w = 124 - inset * 2;
+          const inset = idx * 1.2;
+          const x = 14 + inset;
+          const w = 112 - inset * 2;
           return (
             <g
               key={f}
-              style={{ cursor: "pointer", transition: "transform 220ms" }}
-              transform={active ? `translate(-3 0)` : ""}
+              style={{ cursor: "pointer" }}
               onClick={() => onChange(f)}
+              onKeyDown={(e) => e.key === "Enter" && onChange(f)}
+              role="button"
+              tabIndex={0}
             >
-              {/* Slab shadow */}
               <rect
                 x={x}
                 y={y + blockH}
                 width={w}
-                height="2.5"
-                rx="1.25"
-                fill="oklch(0.5 0.02 250 / 0.12)"
+                height="2"
+                rx="1"
+                fill="var(--foreground)"
+                opacity="0.08"
               />
-              {/* Floor block */}
               <rect
                 x={x}
                 y={y}
                 width={w}
                 height={blockH}
-                rx="4"
-                fill={active ? "var(--primary)" : "oklch(0.98 0.005 250)"}
-                stroke={active ? "oklch(0.50 0.16 255)" : "oklch(0.86 0.005 250)"}
+                rx="5"
+                fill={active ? "var(--primary)" : "var(--secondary)"}
+                stroke={active ? "var(--primary)" : "var(--border)"}
                 strokeWidth="1"
-                style={{ transition: "all 220ms" }}
               />
-              {/* Windows */}
               {[0, 1, 2, 3].map((i) => (
                 <rect
                   key={i}
-                  x={x + 10 + i * ((w - 20) / 4)}
-                  y={y + 9}
-                  width={(w - 20) / 4 - 6}
-                  height="14"
+                  x={x + 8 + i * ((w - 16) / 4)}
+                  y={y + 8}
+                  width={(w - 16) / 4 - 5}
+                  height="12"
                   rx="2"
-                  fill={active ? "oklch(0.99 0 0 / 0.85)" : "oklch(0.88 0.02 250)"}
+                  fill={active ? "var(--primary-foreground)" : "var(--muted-foreground)"}
+                  opacity={active ? 0.85 : 0.25}
                 />
               ))}
             </g>
@@ -104,3 +105,5 @@ export function BuildingSelector({ current, onChange }: Props) {
     </div>
   );
 }
+
+export const BuildingSelector = memo(BuildingSelectorComponent);

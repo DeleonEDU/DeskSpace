@@ -1,5 +1,8 @@
-import { Calendar, Clock, MapPin, Tv, X } from "lucide-react";
+import { memo } from "react";
+import { Calendar, Clock, MapPin, X, CheckCircle2, Users } from "lucide-react";
 import type { Space } from "@/hooks/use-booking";
+import { labelCaps } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 
 interface Props {
   room: Space | null;
@@ -7,55 +10,88 @@ interface Props {
   date: string;
   time: string;
   hours?: number;
+  isBooking?: boolean;
   onClear: () => void;
   onBook: () => void;
 }
 
-export function BookingPanel({ room, floor, date, time, hours = 2, onClear, onBook }: Props) {
+function BookingPanelComponent({
+  room,
+  floor,
+  date,
+  time,
+  hours = 2,
+  isBooking = false,
+  onClear,
+  onBook,
+}: Props) {
   return (
-    <aside className="flex w-full flex-col gap-4 rounded-3xl bg-card p-6 ring-1 ring-border/60 shadow-[var(--shadow-soft)] backdrop-blur-xl lg:w-[280px]">
-      <h3 className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-        Ваше бронювання
-      </h3>
-
-      <div className="rounded-2xl bg-secondary px-4 py-4 text-center">
-        <p className="font-display text-xl font-semibold tracking-tight text-foreground">
-          {room ? room.name : "Оберіть місце"}
-        </p>
-        {room?.capacity && (
-          <p className="mt-1 text-xs text-muted-foreground">{room.capacity} місць</p>
+    <aside className="surface-lg flex w-full flex-col gap-5 p-5 lg:sticky lg:top-8 lg:w-[300px] lg:self-start">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className={labelCaps}>Ваше бронювання</h2>
+        {room && (
+          <CheckCircle2 className="size-5 shrink-0 text-primary" aria-hidden />
         )}
       </div>
 
-      <ul className="space-y-3 text-sm text-foreground">
-        <li className="flex items-center gap-3">
-          <MapPin className="size-4 text-primary" />
-          <span>{floor}-й поверх</span>
-        </li>
-        <li className="flex items-center gap-3">
-          <Calendar className="size-4 text-primary" />
-          <span>{date}</span>
-        </li>
-        <li className="flex items-center gap-3">
-          <Clock className="size-4 text-primary" />
-          <span>{time}</span>
-        </li>
+      <div className="rounded-xl border border-border/50 bg-secondary/40 p-5 text-center">
+        <p className="font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+          {room ? room.name : "Оберіть місце"}
+        </p>
+        {room?.capacity ? (
+          <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <Users className="size-3.5" aria-hidden />
+            {room.capacity} місць
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground">На плані поверху зліва</p>
+        )}
+      </div>
+
+      <ul className="space-y-2.5 text-sm">
+        {[
+          { icon: MapPin, text: `${floor}-й поверх` },
+          { icon: Calendar, text: date },
+          { icon: Clock, text: time },
+        ].map(({ icon: Icon, text }) => (
+          <li
+            key={text}
+            className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/50 px-3 py-2.5"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+              <Icon className="size-4" aria-hidden />
+            </span>
+            <span className="font-medium">{text}</span>
+          </li>
+        ))}
       </ul>
 
-      <div className="mt-auto pt-4"></div>
-      <button
-        disabled={!room}
-        onClick={onBook}
-        className="rounded-full bg-primary px-4 py-3 font-display text-sm font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition hover:opacity-90 disabled:opacity-40"
-      >
-        Забронювати
-      </button>
-      <button
-        onClick={onClear}
-        className="flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-      >
-        <X className="size-4" /> Скинути
-      </button>
+      {hours > 0 && room && (
+        <p className="text-center text-xs font-medium text-muted-foreground">
+          Тривалість: <span className="text-foreground">{hours} год</span>
+        </p>
+      )}
+
+      <div className="mt-auto flex flex-col gap-2 pt-2">
+        <button
+          type="button"
+          disabled={!room || isBooking}
+          onClick={onBook}
+          className={cn("btn-primary w-full py-3.5 text-sm")}
+        >
+          {isBooking ? "Бронюємо…" : "Забронювати"}
+        </button>
+        <button
+          type="button"
+          onClick={onClear}
+          className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <X className="size-4" aria-hidden />
+          Скинути
+        </button>
+      </div>
     </aside>
   );
 }
+
+export const BookingPanel = memo(BookingPanelComponent);

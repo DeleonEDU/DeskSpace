@@ -3,14 +3,25 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { registerUser } from "@/api/auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, Loader2, User, Phone } from "lucide-react";
+import { CheckCircle2, Circle, Mail, Lock, Loader2, User, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { labelCaps, inputField } from "@/lib/ui-classes";
+import { formatPhoneInput, phoneToE164 } from "@/lib/phone";
 
 export const Route = createFileRoute("/register")({
   component: Register,
 });
+
+const passwordReqsDef = (password: string) => [
+  { label: "Мінімум 8 символів", met: password.length >= 8 },
+  { label: "Велика літера", met: /[A-ZА-ЯІЄЇҐ]/.test(password) },
+  { label: "Маленька літера", met: /[a-zа-яієїґ]/.test(password) },
+  { label: "Цифра", met: /[0-9]/.test(password) },
+];
 
 function Register() {
   const [email, setEmail] = useState("");
@@ -24,9 +35,9 @@ function Register() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  const passwordReqs = passwordReqsDef(password);
+
+  if (isLoading) return <LoadingScreen />;
   if (user) return <Navigate to="/" />;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,13 +50,24 @@ function Register() {
       setIsSubmitting(false);
       return;
     }
+    if (!passwordReqs.every((r) => r.met)) {
+      setError("Пароль не відповідає вимогам безпеки");
+      setIsSubmitting(false);
+      return;
+    }
+    const plainPhone = phoneToE164(phone);
+    if (plainPhone.length !== 13) {
+      setError("Введіть коректний номер телефону (10 цифр після +38)");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await registerUser({
         email,
         first_name: firstName,
         last_name: lastName,
-        phone_number: phone,
+        phone_number: plainPhone,
         password,
         password_confirmation: passwordConfirmation,
       });
@@ -58,176 +80,151 @@ function Register() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 py-10">
-      <div className="w-full max-w-[480px] rounded-[2rem] bg-card/80 p-8 shadow-[var(--shadow-card)] ring-1 ring-border/60 backdrop-blur-xl sm:p-10">
-        {/* Logo/Icon */}
-        <div className="mx-auto mb-6 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" className="size-6">
-            <path
-              d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <div className="mb-8 text-center">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-            Створити акаунт
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">Приєднуйтесь до DeskSpace</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <div className="rounded-xl bg-destructive/10 p-3 text-center text-sm font-medium text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="firstName"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                Ім'я
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                  placeholder="Іван"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="lastName"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                Прізвище
-              </Label>
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-                className="h-11 rounded-xl bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                placeholder="Франко"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="email"
-              className="text-xs uppercase tracking-wider text-muted-foreground"
-            >
-              Email
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                placeholder="name@example.com"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="phone"
-              className="text-xs uppercase tracking-wider text-muted-foreground"
-            >
-              Телефон
-            </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                placeholder="+380 50 123 4567"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                Пароль
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="passwordConfirmation"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                Підтвердження
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="passwordConfirmation"
-                  type="password"
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  required
-                  className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-11 w-full rounded-xl mt-2 font-medium shadow-sm transition-all active:scale-[0.98]"
-          >
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Створити акаунт"}
-          </Button>
-        </form>
-
-        <div className="mt-8 text-center text-sm text-muted-foreground">
+    <AuthCard
+      title="Створити акаунт"
+      subtitle="Приєднуйтесь до DeskSpace"
+      footer={
+        <>
           Вже є акаунт?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-primary hover:text-primary/80 transition-colors"
-          >
+          <Link to="/login" className="font-semibold text-primary hover:underline">
             Увійти
           </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-center text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="firstName" className={labelCaps}>
+              Ім&apos;я
+            </Label>
+            <div className="relative">
+              <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                className={cn(inputField, "pl-10")}
+                placeholder="Іван"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName" className={labelCaps}>
+              Прізвище
+            </Label>
+            <Input
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              className={inputField}
+              placeholder="Франко"
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className={labelCaps}>
+            Email
+          </Label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={cn(inputField, "pl-10")}
+              placeholder="name@example.com"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone" className={labelCaps}>
+            Телефон
+          </Label>
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+              required
+              className={cn(inputField, "pl-10 tracking-wide")}
+              placeholder="+38 (050) 123-45-67"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="password" className={labelCaps}>
+              Пароль
+            </Label>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className={cn(inputField, "pl-10 font-mono")}
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="passwordConfirmation" className={labelCaps}>
+              Підтвердження
+            </Label>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="passwordConfirmation"
+                type="password"
+                value={passwordConfirmation}
+                onChange={(e) => setPasswordConfirmation(e.target.value)}
+                required
+                className={cn(inputField, "pl-10 font-mono")}
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+        </div>
+
+        {password.length > 0 && (
+          <ul className="grid grid-cols-2 gap-2 rounded-xl border border-border/50 bg-secondary/30 p-3">
+            {passwordReqs.map((req) => (
+              <li key={req.label} className="flex items-center gap-2 text-xs">
+                {req.met ? (
+                  <CheckCircle2 className="size-3.5 shrink-0 text-primary" />
+                ) : (
+                  <Circle className="size-3.5 shrink-0 text-muted-foreground/40" />
+                )}
+                <span className={req.met ? "font-medium text-foreground" : "text-muted-foreground"}>
+                  {req.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <Button type="submit" disabled={isSubmitting} className="btn-primary h-12 w-full rounded-xl">
+          {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : "Створити акаунт"}
+        </Button>
+      </form>
+    </AuthCard>
   );
 }

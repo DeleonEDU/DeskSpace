@@ -3,10 +3,13 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { login as loginApi, fetchProfile } from "@/api/auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, Loader2 } from "lucide-react";
+import { labelCaps, inputField } from "@/lib/ui-classes";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -20,17 +23,13 @@ function Login() {
   const { login, user, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
+  if (isLoading) return <LoadingScreen />;
   if (user) return <Navigate to="/" />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
-
     try {
       const data = await loginApi(email, password);
       const userData = await fetchProfile(data.access);
@@ -44,94 +43,62 @@ function Login() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-[400px] rounded-[2rem] bg-card/80 p-8 shadow-[var(--shadow-card)] ring-1 ring-border/60 backdrop-blur-xl sm:p-10">
-        <div className="mx-auto mb-6 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" className="size-6">
-            <path
-              d="M3 11l9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-
-        <div className="mb-8 text-center">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-            З поверненням
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">Увійдіть до свого акаунту DeskSpace</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <div className="rounded-xl bg-destructive/10 p-3 text-center text-sm font-medium text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="email"
-              className="text-xs uppercase tracking-wider text-muted-foreground"
-            >
-              Email
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                placeholder="name@example.com"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label
-              htmlFor="password"
-              className="text-xs uppercase tracking-wider text-muted-foreground"
-            >
-              Пароль
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11 rounded-xl pl-10 bg-secondary/50 border-transparent focus:bg-background focus:border-primary focus:ring-primary/20 transition-all"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-11 w-full rounded-xl mt-2 font-medium shadow-sm transition-all active:scale-[0.98]"
-          >
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Увійти"}
-          </Button>
-        </form>
-
-        <div className="mt-8 text-center text-sm text-muted-foreground">
+    <AuthCard
+      title="З поверненням"
+      subtitle="Увійдіть до DeskSpace"
+      footer={
+        <>
           Немає акаунту?{" "}
-          <Link
-            to="/register"
-            className="font-medium text-primary hover:text-primary/80 transition-colors"
-          >
-            Створити акаунт
+          <Link to="/register" className="font-semibold text-primary hover:underline">
+            Створити
           </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-center text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
+        <div className="space-y-2">
+          <Label htmlFor="email" className={labelCaps}>
+            Email
+          </Label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={cn(inputField, "pl-10")}
+              placeholder="name@example.com"
+            />
+          </div>
         </div>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="password" className={labelCaps}>
+            Пароль
+          </Label>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={cn(inputField, "pl-10 font-mono")}
+              placeholder="••••••••"
+            />
+          </div>
+        </div>
+        <Button type="submit" disabled={isSubmitting} className="btn-primary h-12 w-full rounded-xl">
+          {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : "Увійти"}
+        </Button>
+      </form>
+    </AuthCard>
   );
 }
