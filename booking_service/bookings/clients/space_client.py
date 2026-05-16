@@ -21,7 +21,9 @@ class HttpSpaceClient(SpaceClient):
 
     def fetch_space(self, space_id: int, auth_header: str | None) -> SpaceSnapshot | None:
         url = f"{self.base_url}/api/spaces/spaces/{space_id}/"
-        headers = {"Authorization": auth_header} if auth_header else {}
+        headers = {"Host": settings.SPACE_SERVICE_HOST_HEADER}
+        if auth_header:
+            headers["Authorization"] = auth_header
 
         try:
             response = requests.get(url, headers=headers, timeout=self.timeout)

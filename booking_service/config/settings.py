@@ -93,3 +93,5 @@ REST_FRAMEWORK = {
 
 SPACE_SERVICE_URL = env("SPACE_SERVICE_URL", default="http://space_service:8002")
 SPACE_SERVICE_TIMEOUT = env.float("SPACE_SERVICE_TIMEOUT", default=5.0)
+# Docker service names use underscores (invalid RFC host); send a valid Host header.
+SPACE_SERVICE_HOST_HEADER = env("SPACE_SERVICE_HOST_HEADER", default="localhost")
